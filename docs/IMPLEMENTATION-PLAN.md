@@ -33,7 +33,7 @@ registry said "exact match" and the failed primary still dominated. Verdict prec
 **🔴 Two things only the user can do:**
 1. **Plug in an Android phone** with USB debugging — `adb devices` is currently empty, so
    nothing in Phases 3/5 has been device-tested.
-2. **Back up `../niveshrakshak-app/keystore/` off this machine.** Lose it and the 40 testers
+2. **Back up `mobile/keystore/` off this machine.** Lose it and the 40 testers
    can never be updated in place.
 
 ---

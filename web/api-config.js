@@ -40,6 +40,6 @@
 
   /* Shown in the footer next to the registry-data timestamp so the two are
      never confused again. Keep in step with versionName in
-     ../niveshrakshak-app/android/app/build.gradle. */
+     ../mobile/android/app/build.gradle. */
   window.NR_APP_VERSION = "1.0.0";
 })();
