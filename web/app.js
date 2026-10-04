@@ -69,6 +69,50 @@ for (const ev of ["dragover", "dragenter"]) dz.addEventListener(ev, (e) => { e.p
 for (const ev of ["dragleave", "drop"]) dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove("drag"); });
 dz.addEventListener("drop", (e) => setImage(e.dataTransfer.files[0]));
 
+/* ---------- native integration (Capacitor) ----------
+   Everything in this block no-ops in a plain browser, so the hosted web version
+   and local ./run.sh behave exactly as before. See native.js for plugin
+   resolution and the verified share recipes. */
+const NRN = window.NRNative || null;
+
+if (NRN) {
+  // (1) SHARE IN — WhatsApp text + images, Telegram images, Chrome URLs,
+  //     Gallery. The manifest intent-filters are declared on MainActivity with
+  //     exported="true" and launchMode="singleTask". Subscribing through the
+  //     plugin matters because it queues a COLD-START intent natively and
+  //     replays it once the WebView bridge is ready — the native intent arrives
+  //     before JS exists, so a hand-rolled listener would miss it.
+  NRN.init({
+    onText: (txt) => {
+      const box = $("#message");
+      // Append, never replace: WhatsApp drops EXTRA_TEXT when an image is
+      // present, so text and image can arrive in either order or separately.
+      box.value = box.value.trim() ? box.value.trimEnd() + "\n\n" + txt : txt;
+      toast(t("toast_shared_in"));
+    },
+    onImage: (file) => { setImage(file); toast(t("toast_image_in")); },
+  });
+
+  // (2) CLIPBOARD FALLBACK — not a convenience duplicate of the textarea.
+  //     Telegram for Android offers NO external share for a text message (its
+  //     Forward is internal-only), so copy-then-paste is the only way to check
+  //     a Telegram pitch. Read on demand only, never silently on resume.
+  const pasteBtn = $("#paste-btn"), pasteHint = $("#paste-hint");
+  if (pasteBtn) {
+    pasteBtn.addEventListener("click", async () => {
+      const txt = await NRN.readClipboard();
+      if (!txt) {
+        if (pasteHint) { pasteHint.textContent = t("paste_empty"); pasteHint.hidden = false; }
+        return;
+      }
+      const box = $("#message");
+      box.value = box.value.trim() ? box.value.trimEnd() + "\n\n" + txt : txt;
+      if (pasteHint) { pasteHint.textContent = t("paste_done"); pasteHint.hidden = false; }
+      box.focus();
+    });
+  }
+}
+
 /* ---------- progress theatre (mirrors the real pipeline phases) ---------- */
 let progTimers = [];
 function progressOn() {

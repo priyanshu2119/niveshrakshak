@@ -14,6 +14,16 @@ const I18N = {
     msg_hint: "Screenshots work too. Nothing is stored — the message is checked and forgotten.",
     dz_label: "Add a screenshot / QR photo",
     dz_remove: "Remove",
+    // Native share-target + clipboard (Android app only; unused on web).
+    // The paste path is not a shortcut duplicate of the textarea: Telegram for
+    // Android offers no external share for a TEXT message, so copy-then-paste
+    // is the only way to get a Telegram pitch checked.
+    paste_btn: "Paste from clipboard",
+    paste_hint: "",
+    paste_empty: "Clipboard is empty — copy the message first.",
+    paste_done: "Pasted into the box above. Check it when ready.",
+    toast_shared_in: "Message received. Check it when ready.",
+    toast_image_in: "Screenshot received.",
     adv_summary: "Claimed name / registration number (optional)",
     adv_name: "Who do they claim to be?",
     adv_name_ph: "e.g. Groww Investments",
@@ -153,6 +163,12 @@ const I18N = {
     msg_hint: "स्क्रीनशॉट भी चलेंगे। कुछ भी स्टोर नहीं होता — मैसेज जांच के बाद भुला दिया जाता है।",
     dz_label: "स्क्रीनशॉट / QR फ़ोटो जोड़ें",
     dz_remove: "हटाएँ",
+    paste_btn: "क्लिपबोर्ड से पेस्ट करें",
+    paste_hint: "",
+    paste_empty: "क्लिपबोर्ड खाली है — पहले मैसेज कॉपी करें।",
+    paste_done: "ऊपर के बॉक्स में पेस्ट हो गया। तैयार हों तो जाँचें।",
+    toast_shared_in: "मैसेज मिल गया। तैयार हों तो जाँचें।",
+    toast_image_in: "स्क्रीनशॉट मिल गया।",
     adv_summary: "बताया गया नाम / रजिस्ट्रेशन नंबर (वैकल्पिक)",
     adv_name: "वे खुद को कौन बता रहे हैं?",
     adv_name_ph: "जैसे Groww Investments",

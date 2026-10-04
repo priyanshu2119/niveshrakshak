@@ -141,6 +141,16 @@ button.primary:disabled { opacity: .55; cursor: wait; transform: none; }
 }
 .chipbtn:hover { background: var(--accent); color: var(--paper); }
 
+/* ---------- clipboard paste row ----------
+   Only meaningful in the native app: Telegram for Android cannot share a TEXT
+   message out to other apps, so copy-then-paste is a real ingestion path.
+   Sits under the dropzone and reuses .chipbtn so it reads as the same family. */
+.pasterow {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  margin-top: 10px;
+}
+.pasterow .hint { margin: 0; }
+
 /* ---------- progress ---------- */
 .progress { margin: -8px 0 26px; }
 .progress ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }

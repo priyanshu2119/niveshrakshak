@@ -57,6 +57,16 @@
         </div>
       </div>
 
+      <!-- Clipboard path. Not a convenience duplicate of the textarea: Telegram
+           for Android offers NO external share for a text message (its Forward
+           is internal-only), so copy-then-paste is the only way to get a
+           Telegram pitch into a check. WhatsApp text, images and Chrome URLs all
+           arrive through the share sheet instead. -->
+      <div class="pasterow" id="pasterow">
+        <button type="button" id="paste-btn" class="chipbtn" data-i18n="paste_btn">Paste from clipboard</button>
+        <span class="hint" id="paste-hint" data-i18n="paste_hint" hidden></span>
+      </div>
+
       <details id="adv">
         <summary data-i18n="adv_summary">Claimed name / registration number (optional)</summary>
         <div class="advgrid">
