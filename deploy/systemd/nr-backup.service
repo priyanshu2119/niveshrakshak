@@ -1,0 +1,11 @@
+[Unit]
+Description=NiveshRakshak nightly SQLite backup
+After=docker.service
+
+[Service]
+Type=oneshot
+# Runs as the invoking user so the backups land in their home directory.
+User=ubuntu
+Environment=NR_BACKUP_DIR=/home/ubuntu/backups/niveshrakshak
+ExecStart=/opt/niveshrakshak/backup-db.sh
+TimeoutStartSec=10min

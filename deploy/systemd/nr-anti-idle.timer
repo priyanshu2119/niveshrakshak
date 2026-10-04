@@ -1,0 +1,16 @@
+[Unit]
+Description=Run the NiveshRakshak anti-idle job every 4 hours
+Documentation=file:///opt/niveshrakshak/README
+
+[Timer]
+OnBootSec=6min
+OnUnitActiveSec=4h
+# 🔴 Persistent=true is the important bit: if the box was down (or the timer was
+# never installed, as happened with the cron version) the missed run fires on the
+# next boot instead of being silently skipped.
+Persistent=true
+AccuracySec=5min
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

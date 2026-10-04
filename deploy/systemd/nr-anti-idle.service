@@ -1,0 +1,17 @@
+[Unit]
+Description=NiveshRakshak anti-idle + registry refresh
+Documentation=file:///opt/niveshrakshak/README
+# Oracle PERMANENTLY deletes an Always Free instance whose 95th-percentile CPU,
+# network AND memory all stay below 10% over a 7-day window. This unit keeps the
+# box above those thresholds and doubles as a liveness probe + daily data refresh.
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/niveshrakshak/anti-idle.sh
+# The script shells out to docker and writes /var/log, so it needs root.
+User=root
+Nice=10
+# Never let a hung SEBI request wedge the unit.
+TimeoutStartSec=15min
