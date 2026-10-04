@@ -333,7 +333,7 @@ npm i @capacitor/core@latest-8 @capacitor/cli@latest-8 \
       @capacitor/status-bar@latest-8 @capacitor/camera@latest-8
 npx cap init "NiveshRakshak" "app.niveshrakshak" --web-dir=www
 # copy your frontend in (script it so it's repeatable):
-rsync -a --delete ../niveshrakshak/web/ www/
+rsync -a --delete web/ www/
 npx cap add android
 npx @capacitor/assets generate          # icon.svg → adaptive icons + splash
 npx cap sync && npx cap open android    # build & run on a device/emulator
