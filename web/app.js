@@ -6,6 +6,11 @@
 
 window.NR = { lastVerdict: null };
 
+// API base URL — resolved by api-config.js, which must load BEFORE this file.
+//   packaged Android app (Capacitor WebView, origin https://localhost) → remote
+//   hosted web version / local ./run.sh                              → "" (same-origin)
+const API = (p) => (window.NR_API_BASE || "") + p;
+
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => {
   const n = document.createElement(tag);
@@ -89,7 +94,7 @@ function showCaptcha(blob, note) {
 function hideCaptcha() { capPanel.hidden = true; captchaId = null; }
 
 $("#cap-refresh").addEventListener("click", async () => {
-  const r = await fetch("/api/captcha"); const j = await r.json();
+  const r = await fetch(API("/api/captcha")); const j = await r.json();
   if (j.state === "ok") showCaptcha(j); else toast(t("hl_body.unverifiable"));
 });
 $("#cap-submit").addEventListener("click", () => submitCheck(true));
