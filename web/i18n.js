@@ -339,4 +339,8 @@ function setLang(l) {
   localStorage.setItem("nr-lang", l);
   applyStatic();
   if (window.NR && window.NR.lastVerdict) window.NR.renderVerdict(window.NR.lastVerdict);
+  // The footer line is built from live /api/health data rather than a static
+  // data-i18n attribute, so applyStatic() cannot reach it — re-render it from
+  // the cached payload or it stays in the previous language.
+  if (window.NR && window.NR.renderBuildInfo) window.NR.renderBuildInfo();
 }

@@ -529,13 +529,29 @@ async function shareCopy() {
 }
 
 /* ---------- footer build info ---------- */
-(async function buildInfo() {
+/* Cached so a language switch can re-render the line instantly without another
+   network round-trip. buildInfo() used to be a fire-once IIFE, which is why the
+   footer stayed in English after toggling to हिंदी — setLang() re-renders the
+   verdict card but nothing re-ran this. */
+let _healthCache = null;
+
+function renderBuildInfo() {
+  const h = _healthCache;
+  if (!h) return;
+  $("#build-info").textContent = t("build_line", {
+    version: window.NR_APP_VERSION || "dev",
+    rows: (h.registry?.mirror_rows || 0).toLocaleString(LANG === "hi" ? "hi-IN" : "en-IN"),
+    as_of: h.registry?.as_of || "?",
+    policy: `${h.policy?.mode}/${h.policy?.legacy_cutoff}`,
+  });
+}
+
+async function buildInfo() {
   try {
-    const r = await fetch("/api/health"); const h = await r.json();
-    $("#build-info").textContent = t("build_line", {
-      rows: (h.registry?.mirror_rows || 0).toLocaleString("en-IN"),
-      as_of: h.registry?.as_of || "?",
-      policy: `${h.policy?.mode}/${h.policy?.legacy_cutoff}`,
-    });
+    const r = await fetch(API("/api/health"));
+    _healthCache = await r.json();
+    renderBuildInfo();
   } catch { /* offline — leave empty */ }
-})();
+}
+window.NR.renderBuildInfo = renderBuildInfo;   // called by i18n.js setLang()
+buildInfo();
