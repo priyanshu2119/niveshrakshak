@@ -1,0 +1,33 @@
+# 🔴 NEVER COMMIT THESE. The release keystore is the app's identity: Android only
+# installs an update over an existing app if it is signed with the SAME key. If
+# this key leaks, anyone can publish updates your testers' phones will accept.
+# If it is LOST, your 40 testers must uninstall and reinstall (losing local data)
+# and you can never update the app they have.
+keystore/
+*.jks
+*.keystore
+keystore.properties
+
+# Node / Capacitor.
+# package-lock.json IS committed on purpose: the exact plugin versions matter
+# here (several nearby packages are archived, paid, or lack a release for this
+# Capacitor major), so a reproducible install is worth more than a clean diff.
+node_modules/
+
+# Gradle / Android build output
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+android/local.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+.vscode/

@@ -1,0 +1,25 @@
+{
+  "appId": "app.niveshrakshak",
+  "appName": "NiveshRakshak",
+  "webDir": "../web",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 700,
+      "launchAutoHide": true,
+      "backgroundColor": "#F7F3EC",
+      "androidSplashResourceName": "splash"
+    },
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "LIGHT",
+      "hidden": false
+    }
+  }
+}

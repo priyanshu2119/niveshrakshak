@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- ================= SHARE TARGET =============================
+                 Lets the user long-press a message in WhatsApp / Telegram, or a
+                 screenshot in Gallery, and send it straight here.
+
+                 The <activity> above already has android:exported="true" (which
+                 is MANDATORY for API 31+ because the system share sheet launches
+                 us cross-UID) and android:launchMode="singleTask" (so a share
+                 arriving while we are already running is delivered to
+                 onNewIntent, which MainActivity must handle + setIntent).
+
+                 Per-filter android:label is what the sheet displays as the
+                 target name. Since API 29 the sheet uses ONLY the <application>
+                 icon, so icons on these filters would be ignored.
+            -->
+
+            <!-- Shared TEXT: WhatsApp message (Forward then share icon),
+                 Chrome page URL, SMS, any app using the standard sheet. -->
+            <intent-filter android:label="@string/share_target_text">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
+            <!-- Shared single IMAGE: WhatsApp/Telegram photo, Gallery screenshot.
+                 Arrives as a content:// URI in EXTRA_STREAM with a temporary
+                 read grant; the bytes must be copied to our own cache
+                 immediately because the grant does not survive process death. -->
+            <intent-filter android:label="@string/share_target_image">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+
+            <!-- Shared MULTIPLE images: WhatsApp multi-message forward. -->
+            <intent-filter android:label="@string/share_target_image">
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+
+            <!-- Floating text-selection toolbar chip ("Check with NiveshRakshak").
+                 Appears in Chrome, SMS and any app using the framework text
+                 widgets. It will NOT appear inside WhatsApp or Telegram because
+                 those draw chat text with custom views, which is why the app
+                 also offers a paste-from-clipboard path for Telegram text. -->
+            <intent-filter android:label="@string/share_target_text">
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
+    </application>
+
+    <!-- Permissions -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>

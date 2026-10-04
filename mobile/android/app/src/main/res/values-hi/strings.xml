@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- Hindi overrides for the system share-sheet labels. Only the strings that
+     differ are listed; everything else falls back to values/strings.xml.
+     The app's own UI copy lives in web/i18n.js — this file only covers the
+     native Android chrome, which i18n.js cannot reach. -->
+<resources>
+    <string name="share_target_text">NiveshRakshak से जाँचें</string>
+    <string name="share_target_image">स्क्रीनशॉट NiveshRakshak से जाँचें</string>
+</resources>

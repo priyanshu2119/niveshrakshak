@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">NiveshRakshak</string>
+    <string name="title_activity_main">NiveshRakshak</string>
+    <string name="package_name">app.niveshrakshak</string>
+    <string name="custom_url_scheme">app.niveshrakshak</string>
+
+    <!-- Labels shown in the Android system share sheet when the user shares
+         content INTO this app. Per-intent-filter labels let each entry describe
+         the action rather than just repeating the app name.
+         NOTE: since API 29 the sheet uses only the <application> icon; icons on
+         activity/intent-filter tags are ignored, so only the label matters. -->
+    <string name="share_target_text">Check with NiveshRakshak</string>
+    <string name="share_target_image">Check screenshot with NiveshRakshak</string>
+</resources>
