@@ -40,15 +40,27 @@ applyStatic();
 /* ---------- image input ---------- */
 const dz = $("#dropzone"), fileInput = $("#image"), dzPrev = $("#dz-preview"), dzThumb = $("#dz-thumb");
 let imageFile = null;
+let thumbUrl = null;   // tracked so it can be revoked — see setImage
 
 function setImage(f) {
-  if (f && !/^image\/(png|jpeg|webp)$/.test(f.type)) { toast(t("err_image")); return; }
+  // Accept what the server's OCR pipeline can actually decode (ocr.py sniffs
+  // PNG/JPEG/WEBP/GIF magic bytes). "jpg" is included because some share sheets
+  // report the non-standard image/jpg. SVG is excluded: it can carry script.
+  if (f && !/^image\/(png|jpe?g|webp|gif)$/.test(f.type)) { toast(t("err_image")); return; }
   imageFile = f || null;
+  // Release the previous blob URL. createObjectURL keeps the underlying bytes
+  // alive until revoked, so swapping screenshots repeatedly would leak each one.
+  if (thumbUrl) { URL.revokeObjectURL(thumbUrl); thumbUrl = null; }
   if (imageFile) {
-    dzThumb.src = URL.createObjectURL(imageFile);
+    thumbUrl = URL.createObjectURL(imageFile);
+    dzThumb.src = thumbUrl;
     dzPrev.hidden = false;
   } else {
-    dzThumb.src = ""; dzPrev.hidden = true;
+    // 🔴 removeAttribute, NOT src="". An empty src resolves against the document
+    // URL, fails to load as an image, and paints a broken-image placeholder —
+    // which is exactly what was visible after tapping "Remove".
+    dzThumb.removeAttribute("src");
+    dzPrev.hidden = true;
   }
 }
 fileInput.addEventListener("change", () => setImage(fileInput.files[0]));

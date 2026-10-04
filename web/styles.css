@@ -386,3 +386,27 @@ footer .hint { margin: 0 0 12px; }
   .masthead .langswitch, #check-form, .progress, .sharerow, .how, .explainer, #toast { display: none !important; }
   .verdict { box-shadow: none; break-inside: avoid; }
 }
+
+/* ---------- appended last so these win the cascade ---------- */
+
+/* 🔴 [hidden] MUST beat author-level display rules. The UA stylesheet's
+   [hidden]{display:none} has lower priority than any author rule, so
+   `.dz-preview { display:flex }` was overriding it: after tapping "Remove" the
+   preview row stayed visible with src="" (which resolves to the document URL and
+   renders a broken-image placeholder). This one rule fixes that element and
+   protects every other hidden-toggled element (#progress, #captcha-panel,
+   #paste-hint) against the same class of bug. */
+[hidden] { display: none !important; }
+
+/* Android 15+ edge-to-edge (this app targets SDK 36): the status and navigation
+   bars are transparent and content is drawn behind them, so the page must pad by
+   the real insets or the masthead sits under the clock. env() resolves to 0 in a
+   normal desktop browser, so the hosted web version is pixel-identical.
+   Capacitor's SystemBars plugin additionally exposes --safe-area-inset-* custom
+   properties for WebViews older than 140 that lack env() support. */
+body {
+  padding-top: env(safe-area-inset-top, var(--safe-area-inset-top, 0px));
+  padding-bottom: env(safe-area-inset-bottom, var(--safe-area-inset-bottom, 0px));
+  padding-left: env(safe-area-inset-left, var(--safe-area-inset-left, 0px));
+  padding-right: env(safe-area-inset-right, var(--safe-area-inset-right, 0px));
+}
