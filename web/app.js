@@ -158,6 +158,26 @@ $("#cap-submit").addEventListener("click", () => submitCheck(true));
 /* ---------- submit ---------- */
 $("#check-form").addEventListener("submit", (e) => { e.preventDefault(); submitCheck(false); });
 
+/* ---------- honest local failure ----------
+   When the request never reaches the backend (offline, DNS, tunnel down) or is
+   rejected before a check runs (rate limit, oversized image), the PREVIOUS
+   verdict card used to stay on screen next to an error toast. A user who had
+   just checked a different message could read the stale card as the answer for
+   the new one — exactly the kind of false all-clear this product refuses to
+   give. So we replace it with the same UNVERIFIABLE shape the backend emits on
+   its own internal errors, keeping one honest rendering path. */
+function renderLocalFailure(reasonCode) {
+  const v = {
+    headline: { state: "unverifiable", reasons: [reasonCode || "network_error"], policy_note: null },
+    primaries: [],
+    registry: null,
+    supporting: { redflags: [], flags: [], amounts: [], phones: [] },
+    meta: { checked_at: new Date().toISOString().slice(0, 19), sources: {}, policy: {} },
+  };
+  hideCaptcha();
+  renderVerdict(v);
+}
+
 async function submitCheck(fromCaptcha) {
   const msg = $("#message").value.trim();
   if (!msg && !imageFile) { toast(t("err_empty")); $("#message").focus(); return; }
@@ -171,10 +191,10 @@ async function submitCheck(fromCaptcha) {
   $("#submit-btn").disabled = true;
   progressOn();
   try {
-    const r = await fetch("/api/check", { method: "POST", body: fd });
-    if (r.status === 429) { toast(t("err_rate")); return; }
+    const r = await fetch(API("/api/check"), { method: "POST", body: fd });
+    if (r.status === 429) { toast(t("err_rate")); renderLocalFailure("rate_limited"); return; }
     const v = await r.json();
-    if (v.error === "image_too_large" || v.error && v.error.startsWith("image")) { toast(t("err_image")); return; }
+    if (v.error === "image_too_large" || v.error && v.error.startsWith("image")) { toast(t("err_image")); renderLocalFailure("image_rejected"); return; }
     if (v.error) { toast(t("err_internal")); renderVerdict(v); return; }
     if (v.headline.state === "captcha_pending" && v.captcha) {
       hideCaptcha();
@@ -185,7 +205,11 @@ async function submitCheck(fromCaptcha) {
     hideCaptcha();
     renderVerdict(v);
   } catch (err) {
+    // Network-level failure — the request never reached the backend (offline,
+    // DNS, tunnel down). Replace any stale card with an honest UNVERIFIABLE
+    // verdict rather than leaving the previous answer on screen.
     toast(t("err_internal"));
+    renderLocalFailure("network_error");
   } finally {
     $("#submit-btn").disabled = false;
     progressOff();
