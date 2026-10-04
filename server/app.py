@@ -13,6 +13,7 @@ import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -94,6 +95,29 @@ async def security_headers(request: Request, call_next):
         "form-action 'none'; frame-ancestors 'none'; base-uri 'none'")
     return resp
 
+# --- CORS (Android app) ---------------------------------------------------------
+# The Capacitor WebView serves the bundled frontend from a local origin, so calls
+# to this API are cross-origin and need explicit CORS. Registered AFTER the
+# security-headers middleware above so that Starlette makes it the OUTERMOST
+# layer — preflight OPTIONS must be answered before anything else runs.
+#
+# Only the Capacitor WebView origins are allowed (androidScheme: "https" gives
+# https://localhost; iOS gives capacitor://localhost). The hosted web version is
+# same-origin and needs no CORS at all. Override with NR_CORS_ORIGINS
+# (comma-separated) if the app origin ever changes.
+_cors_origins = [o.strip() for o in os.environ.get(
+    "NR_CORS_ORIGINS",
+    "https://localhost,http://localhost,capacitor://localhost"
+).split(",") if o.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=False,     # no cookies in this API; keeps it simple + safe
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+    max_age=600,
+)
 
 # --- core check -----------------------------------------------------------------
 
