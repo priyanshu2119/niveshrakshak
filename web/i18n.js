@@ -138,20 +138,30 @@ const I18N = {
     checked_at: "checked {time}",
     check_id: "check #{id}",
     took: "in {ms} ms",
-    share_btn: "Share this verdict",
-    share_png: "Save as image",
+    share_btn: "Share the card",
+    share_text_btn: "Share as text",
     share_copy: "Copy text",
     toast_copied: "Verdict text copied — paste it into the chat.",
     toast_png: "Image saved — forward it into the chat.",
     toast_shared: "Shared.",
     toast_share_fail: "Sharing isn't available here — use Save as image or Copy text.",
-    share_text: "NiveshRakshak check [{stamp}]: {title} | {primary} | Registry: {reg} | Check #{id} · {time} | Verify yourself: https://siportal.sebi.gov.in/intermediary/sebi-check",
-    reg_summaries: { exact: "name IS in SEBI registry (not proof of sender)", near: "SUSPICIOUS NEAR-MATCH in registry", not_found: "name NOT in SEBI registry", unavailable: "registry unreachable", none: "no name claimed" },
+    // Multi-line on purpose: WhatsApp collapses a single dense line into an
+    // unreadable block, and the first line is what shows in the chat preview —
+    // so it carries the verdict. Both links matter: SEBI is the independent
+    // "verify it yourself" anchor (we amplify the regulator, never replace it),
+    // and {app_url} closes the loop so a forward recruits the next person
+    // instead of sending all the traffic to SEBI alone.
+    share_text: "NiveshRakshak: {stamp}\n\n{title}\nPayment: {primary}\nRegistry: {reg}\n\nCheck #{id} · {time}\n\nVerify at SEBI: https://siportal.sebi.gov.in/intermediary/sebi-check\nCheck another message: {app_url}",
+    reg_summaries: { exact: "name IS in the SEBI registry (not proof of who sent this)", near: "SUSPICIOUS NEAR-MATCH in the registry", not_found: "name NOT in the SEBI registry", unavailable: "registry could not be reached", none: "no company name was given to check" },
     err_rate: "Too many checks from this device — please wait a few minutes.",
     err_empty: "Paste a message, add a screenshot, or type a UPI ID first.",
     err_image: "That image couldn't be read. Try a clearer screenshot (PNG/JPEG).",
     err_internal: "The check failed on our side — nothing was verified. Please try again.",
-    build_line: "registry mirror: {rows} entries · updated {as_of} · handle policy: {policy}",
+    // "SEBI registry data … last refreshed" rather than a bare "updated": the
+    // timestamp is the freshness of the downloaded registry mirror on the
+    // server, NOT the app's install/update time, and the old wording read as
+    // the latter. The explicit app version next to it removes the ambiguity.
+    build_line: "NiveshRakshak v{version} · SEBI registry data: {rows} entries, last refreshed {as_of} IST · handle policy: {policy}",
   },
 
   hi: {
@@ -282,20 +292,20 @@ const I18N = {
     checked_at: "जांच: {time}",
     check_id: "चेक #{id}",
     took: "{ms} मि.से. में",
-    share_btn: "यह रिपोर्ट भेजें",
-    share_png: "इमेज सहेजें",
+    share_btn: "कार्ड भेजें",
+    share_text_btn: "टेक्स्ट भेजें",
     share_copy: "टेक्स्ट कॉपी करें",
     toast_copied: "रिपोर्ट कॉपी हो गई — चैट में पेस्ट करें।",
     toast_png: "इमेज सहेज ली गई — चैट में फ़ॉरवर्ड करें।",
     toast_shared: "साझा हो गया।",
     toast_share_fail: "यहाँ शेयर उपलब्ध नहीं — इमेज सहेजें या टेक्स्ट कॉपी करें।",
-    share_text: "NiveshRakshak जांच [{stamp}]: {title} | {primary} | रजिस्ट्री: {reg} | चेक #{id} · {time} | खुद जांचें: https://siportal.sebi.gov.in/intermediary/sebi-check",
-    reg_summaries: { exact: "नाम SEBI रजिस्ट्री में है (भेजने वाले का प्रमाण नहीं)", near: "रजिस्ट्री में संदिग्ध मिलता-जुलता नाम", not_found: "नाम SEBI रजिस्ट्री में नहीं", unavailable: "रजिस्ट्री से संपर्क नहीं", none: "कोई नाम नहीं बताया गया" },
+    share_text: "NiveshRakshak: {stamp}\n\n{title}\nभुगतान: {primary}\nरजिस्ट्री: {reg}\n\nचेक #{id} · {time}\n\nSEBI पर खुद जांचें: https://siportal.sebi.gov.in/intermediary/sebi-check\nदूसरा मैसेज जांचें: {app_url}",
+    reg_summaries: { exact: "नाम SEBI रजिस्ट्री में है (यह भेजने वाले का प्रमाण नहीं)", near: "रजिस्ट्री में संदिग्ध मिलता-जुलता नाम", not_found: "नाम SEBI रजिस्ट्री में नहीं", unavailable: "रजिस्ट्री से संपर्क नहीं हो सका", none: "जांच के लिए कोई कंपनी नाम नहीं दिया गया" },
     err_rate: "इस डिवाइस से बहुत अधिक जांच — कुछ मिनट रुकें।",
     err_empty: "पहले मैसेज पेस्ट करें, स्क्रीनशॉट जोड़ें, या UPI ID लिखें।",
     err_image: "यह इमेज पढ़ी नहीं जा सकी। साफ़ स्क्रीनशॉट (PNG/JPEG) से कोशिश करें।",
     err_internal: "हमारी ओर से जांच विफल — कुछ भी सत्यापित नहीं हुआ। फिर कोशिश करें।",
-    build_line: "रजिस्ट्री मिरर: {rows} प्रविष्टियाँ · अद्यतन {as_of} · हैंडल नीति: {policy}",
+    build_line: "NiveshRakshak v{version} · SEBI रजिस्ट्री डेटा: {rows} प्रविष्टियाँ, अंतिम ताज़ा {as_of} IST · हैंडल नीति: {policy}",
   },
 };
 

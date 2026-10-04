@@ -434,17 +434,26 @@ function renderVerdict(v) {
   // share row
   const row = el("div", "sharerow");
   const bShare = el("button", "main", `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 3v12m0-12 4 4m-4-4L8 7M5 14v5h14v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> ${t("share_btn")}`);
-  bShare.type = "button"; bShare.addEventListener("click", shareWeb);
-  const bPng = el("button", "", t("share_png")); bPng.type = "button"; bPng.addEventListener("click", sharePng);
+  bShare.type = "button"; bShare.addEventListener("click", shareCard);
+  const bText = el("button", "", t("share_text_btn")); bText.type = "button"; bText.addEventListener("click", shareAsText);
   const bCopy = el("button", "", t("share_copy")); bCopy.type = "button"; bCopy.addEventListener("click", shareCopy);
-  row.append(bShare, bPng, bCopy);
+  row.append(bShare, bText, bCopy);
   host.append(row);
 
   h2.focus({ preventScroll: true });
   card.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-/* ---------- sharing ---------- */
+/* ---------- sharing ----------
+   Button order matters. The verdict CARD is the artifact this product exists to
+   spread — README: "a screenshot-ready verdict card meant to be forwarded
+   straight back into the WhatsApp/Telegram group the pitch came from". So the
+   primary action shares the image (with the text as its caption, which keeps the
+   links clickable). Text-only is the explicit secondary, and clipboard the last.
+
+   Previously the primary button sent text only and the image hid behind a button
+   labelled "Save as image" — which reads as "download to gallery", so nobody
+   found the feature that carries the whole viral loop. */
 window.NR.renderVerdict = renderVerdict;   // i18n.js re-renders on language switch
 
 function shareText() {
@@ -457,34 +466,61 @@ function shareText() {
     stamp: st, title: t("hl_title." + v.headline.state), primary,
     reg, id: v.meta?.check_id ?? "—",
     time: (v.meta?.checked_at || "").replace("T", " ").slice(0, 16),
+    app_url: window.NR_SHARE_URL || "",
   });
 }
 
-async function shareWeb() {
-  const text = shareText();
-  if (navigator.share) {
-    try { await navigator.share({ text }); toast(t("toast_shared")); return; }
-    catch (e) { if (e.name === "AbortError") return; }
-  }
-  // fallback: try file share via PNG, else copy
-  try { await sharePng(true); } catch { await shareCopy(); }
+/* Render the verdict card to a PNG blob. Promisified — the old callback-style
+   canvas.toBlob meant `await sharePng()` resolved BEFORE the share happened, so
+   the caller's try/catch fallback chain never actually ran. */
+async function cardToBlob() {
+  const card = $("#verdict-card");
+  if (!card || !window.html2canvas) return null;
+  const canvas = await html2canvas(card, { backgroundColor: "#F7F3EC", scale: 2, useCORS: false });
+  return await new Promise((res) => canvas.toBlob((b) => res(b), "image/png"));
 }
 
-async function sharePng(quiet) {
-  const card = $("#verdict-card"); if (!card || !window.html2canvas) return;
-  const canvas = await html2canvas(card, { backgroundColor: "#F7F3EC", scale: 2, useCORS: false });
-  canvas.toBlob(async (blob) => {
-    if (!blob) return;
+/* Text-only share. Native sheet first: navigator.share is unreliable in a WebView. */
+async function shareAsText() {
+  const text = shareText();
+  if (NRN && await NRN.shareTextOnly(text)) { toast(t("toast_shared")); return true; }
+  if (navigator.share) {
+    try { await navigator.share({ text }); toast(t("toast_shared")); return true; }
+    catch (e) { if (e.name === "AbortError") return true; }   // user cancelled — not a failure
+  }
+  return false;
+}
+
+/* PRIMARY: the card image + its text as caption. Falls back to text-only, then
+   to a local download, then to the clipboard — so the button never dead-ends. */
+async function shareCard() {
+  let blob = null;
+  try { blob = await cardToBlob(); } catch (e) { blob = null; }
+
+  if (blob) {
+    // Native path: writes the PNG into the cache dir under a .png name and hands
+    // the file:// URI to @capacitor/share, which does the FileProvider conversion
+    // + URI grant + chooser. See native.js for why the extension and the cache
+    // directory are both non-negotiable.
+    if (NRN && await NRN.shareImageBlob(blob, shareText())) { toast(t("toast_shared")); return; }
+
     const file = new File([blob], "niveshrakshak-verdict.png", { type: "image/png" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try { await navigator.share({ files: [file], text: shareText() }); toast(t("toast_shared")); return; }
       catch (e) { if (e.name === "AbortError") return; }
     }
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    if (!quiet) toast(t("toast_png"));
-  }, "image/png");
+    // No file-share support (desktop browser): download it so it can still be forwarded.
+    if (!NRN) {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      toast(t("toast_png"));
+      return;
+    }
+  }
+  // Image unavailable or every image path failed — still get the verdict out.
+  if (await shareAsText()) return;
+  await shareCopy();
 }
 
 async function shareCopy() {
