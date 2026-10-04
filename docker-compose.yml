@@ -1,0 +1,54 @@
+# NiveshRakshak backend.
+#
+# Host is an Oracle Always Free A1: 2 OCPU / 11 GB RAM / 71 GB free, and it ALSO
+# runs another project (omniroute + redis). The caps below exist so a tesseract
+# OCR burst can never starve that neighbour.
+#
+#   sudo docker compose up -d --build
+#
+# The published port is bound to LOOPBACK ONLY. The public face is the reverse
+# proxy / tunnel (see deploy/README.md) — never expose 8300 directly.
+
+services:
+  niveshrakshak:
+    build: .
+    image: niveshrakshak:latest
+    container_name: niveshrakshak
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:8300:8300"
+
+    volumes:
+      # Registry mirror (5.6 MB SQLite) + audit log + SEBI result cache.
+      # Must survive redeploys — and Oracle can permanently delete an idle
+      # Always Free instance, so deploy/backup-db.sh copies this off-box.
+      - nr-data:/app/data
+
+    environment:
+      # The container defaults to UTC, which made every user-facing timestamp
+      # (registry "as of", verdict checked_at) read 5h30m behind Indian users —
+      # and "08:27" looked like a stale build to a tester who installed at 16:00.
+      # The product is India-only (SEBI, UPI, EN/HI), so pin IST.
+      TZ: "Asia/Kolkata"
+      NR_RATE_LIMIT: "30"
+      NR_RATE_WINDOW: "600"
+      NR_RETENTION_DAYS: "90"
+      NR_STRICT_MODE: "auto"
+      # Capacitor WebView origins. androidScheme:"https" → https://localhost.
+      NR_CORS_ORIGINS: "https://localhost,http://localhost,capacitor://localhost"
+
+    # 2 OCPU total on the box, ~7.5 GB RAM available. Leave headroom for the
+    # neighbour project and for the OS page cache.
+    cpus: 1.5
+    mem_limit: 2g
+    mem_reservation: 512m
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  nr-data:
