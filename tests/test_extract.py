@@ -29,6 +29,52 @@ def test_zero_width_evasion():
     assert extract_all("pay scam\u200b99@ybl")["upis"] == ["scam99@ybl"]
 
 
+def test_ocr_space_around_at():
+    """Tesseract inserts a space around '@' at chat-screenshot glyph sizes.
+
+    Found from a real device report: a friend's WhatsApp screenshot came back
+    from OCR as "jaiswalrahul2427-1 @oksbi" and the app answered "no payment
+    details found", even though the handle was sitting right there in the text.
+    _UPI requires the two halves to be adjacent, so a single space hid it
+    completely. Reproduced at 28px and 36px glyphs; clean at 44px and above,
+    which is why it passed every earlier test and only failed in the field.
+    """
+    # the exact shape observed on the device
+    assert extract_all("Pay to UPI ID:\njaiswalrahul2427-1 @oksbi")["upis"] == [
+        "jaiswalrahul2427-1@oksbi"]
+    # space before, after, or both; tab as well
+    assert extract_all("scam99 @ybl")["upis"] == ["scam99@ybl"]
+    assert extract_all("scam99@ ybl")["upis"] == ["scam99@ybl"]
+    assert extract_all("scam99 @ ybl")["upis"] == ["scam99@ybl"]
+    assert extract_all("scam99\t@ybl")["upis"] == ["scam99@ybl"]
+    # dotted @valid handles survive the same treatment
+    assert extract_all("pay taurus.cf.brk @validaxis")["upis"] == ["taurus.cf.brk@validaxis"]
+    # a long plain username qualifies on length alone
+    assert extract_all("rahulinvestments @paytm")["upis"] == ["rahulinvestments@paytm"]
+    # and the adjacent form is untouched
+    assert extract_all("scam99@ybl")["upis"] == ["scam99@ybl"]
+
+
+def test_ocr_space_guards_reject_prose():
+    """Rejoining must not manufacture a payment destination out of a sentence.
+
+    The two errors are not symmetric: a missed handle yields an honest "nothing
+    to check", while an invented one is sent to SEBI Check, comes back invalid,
+    and shows the user a RED FLAG for prose that was never a payee. So the PSP
+    must start with a letter and the username must carry a digit, dot or dash or
+    be at least 8 characters.
+    """
+    assert extract_all("meet @ 5pm")["upis"] == []            # PSP starts with a digit
+    assert extract_all("offer valid @ 2024")["upis"] == []     # PSP starts with a digit
+    assert extract_all("pay @ oksbi")["upis"] == []            # short plain username
+    assert extract_all("contact @ support")["upis"] == []      # short plain username
+    assert extract_all("invest @ zerodha office")["upis"] == []
+    # An email stays an email: the dot in the domain is what separates the two,
+    # and that rule must survive the space-rejoining above.
+    assert extract_all("email me @ gmail.com")["upis"] == []
+    assert extract_all("reach us @ support@groww.in")["upis"] == []
+
+
 def test_upi_deep_link():
     links = extract_upi_links("scan: upi://pay?pa=fraud99@ybl&pn=Quick%20Money&am=50000&cu=INR")
     assert links[0]["pa"] == "fraud99@ybl"

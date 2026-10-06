@@ -66,12 +66,48 @@ _AT_OBF = re.compile(r"([a-zA-Z0-9][a-zA-Z0-9._-]{1,253})\s*[\(\[]\s*at\s*[\)\]]
 _AT_WORD = re.compile(r"([a-zA-Z0-9][a-zA-Z0-9._-]*\.[a-zA-Z0-9._-]*)\s+at\s+([a-zA-Z0-9][a-zA-Z0-9-]{1,63})", re.I)
 _AT_VALID = re.compile(r"([a-zA-Z0-9][a-zA-Z0-9._-]{1,253})\s+at\s+(valid[a-zA-Z0-9-]{1,63})", re.I)
 
+# A space around the "@" — the single most common way OCR loses a handle.
+# Tesseract inserts one at the glyph sizes real chat screenshots use, so the
+# handle is sitting right there in the text and _UPI still never matches it.
+# Reproduced: "jaiswalrahul2427-1 @oksbi" at 28-36px glyphs, clean at 44px+.
+#
+# The guards are deliberately tight because the two failure modes are NOT
+# symmetric. Missing a handle yields an honest "no payment details found".
+# Inventing one sends ordinary prose to SEBI Check, which answers "invalid",
+# and the user is shown a RED FLAG for a sentence that was never a payment
+# destination — the exact false accusation this product refuses to make. So:
+#   - the PSP must start with a letter  → rejects "meet @ 5pm", "@ 2024"
+#   - the username must carry a digit, dot or dash, or be at least 8 chars
+#                                       → rejects "pay @ oksbi", "contact @ support"
+# The space may fall on either side of the '@' or both; requiring at least one
+# keeps an already-adjacent handle out of this path entirely.
+_AT_SPACE = re.compile(
+    r"(?<![A-Za-z0-9._@-])"
+    r"([a-zA-Z0-9][a-zA-Z0-9._-]{2,253})"
+    r"(?:[ \t]+@[ \t]*|[ \t]*@[ \t]+)"
+    r"([a-zA-Z][a-zA-Z0-9]{1,63})"
+    r"(?![A-Za-z0-9._-])"
+)
+_HANDLEISH = re.compile(r"[0-9._-]")
+
+
+def _plausible_username(user: str) -> bool:
+    """Real UPI usernames are bank- or app-generated: long, or carrying digits,
+    dots or dashes. Prose words are short and plain, so requiring one of those
+    markers is what keeps "pay @ oksbi" from becoming a payment destination.
+    A genuine short handle like "rahul @ybl" is missed — a safe miss, since the
+    verdict then says "nothing to check" rather than accusing a real payee."""
+    return bool(_HANDLEISH.search(user)) or len(user) >= 8
+
 
 def normalize(text: str) -> str:
     text = _INVISIBLE.sub("", text or "")
     text = _AT_OBF.sub(r"\1@\2", text)
     text = _AT_WORD.sub(r"\1@\2", text)
     text = _AT_VALID.sub(r"\1@\2", text)
+    text = _AT_SPACE.sub(
+        lambda m: f"{m.group(1)}@{m.group(2)}" if _plausible_username(m.group(1)) else m.group(0),
+        text)
     return text
 
 
