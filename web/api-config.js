@@ -22,7 +22,7 @@
   //
   // For a PERMANENT URL, put any domain on Cloudflare's free plan and convert
   // nr-tunnel.service to a named tunnel — see deploy/README.md.
-  var REMOTE_API = "https://columns-meets-desired-hub.trycloudflare.com";
+  var REMOTE_API = "https://store-integrity-platinum-act.trycloudflare.com";
 
   var h = location.hostname;
   var isNativeApp =
