@@ -18,6 +18,7 @@ Usage:
 """
 
 import argparse
+import csv
 import html
 import logging
 import re
@@ -420,6 +421,95 @@ def clear_source(source: str) -> int:
 
 
 # =============================================================================
+# OpenSanctions SEBI Debarred Entities (PRIMARY SOURCE — 14K+ entities)
+# =============================================================================
+
+OPENSANCTIONS_CSV = Path(__file__).resolve().parent.parent / "data" / "opensanctions_sebi.csv"
+OPENSANCTIONS_URL_BASE = "https://data.opensanctions.org/artifacts/in_nse_debarred/"
+
+
+def download_opensanctions() -> Path:
+    """Download latest OpenSanctions SEBI debarred entities CSV."""
+    # First get the latest artifact URL from the index
+    index_url = "https://data.opensanctions.org/datasets/latest/in_nse_debarred/index.json"
+    try:
+        resp = SESSION.get(index_url, timeout=30)
+        resp.raise_for_status()
+        index = resp.json()
+        # Find the CSV artifact URL
+        csv_url = None
+        for resource in index.get("resources", []):
+            if resource.get("name") == "targets.simple.csv":
+                csv_url = resource.get("url")
+                break
+        if not csv_url:
+            # Fallback: construct from timestamp
+            ts = index.get("version", {}).get("timestamp", "")
+            if ts:
+                csv_url = f"{OPENSANCTIONS_URL_BASE}{ts}/targets.simple.csv"
+        if csv_url:
+            log.info("Downloading OpenSanctions from %s", csv_url)
+            resp = SESSION.get(csv_url, timeout=120)
+            resp.raise_for_status()
+            OPENSANCTIONS_CSV.write_bytes(resp.content)
+            log.info("Downloaded %d bytes to %s", len(resp.content), OPENSANCTIONS_CSV)
+            return OPENSANCTIONS_CSV
+    except Exception as e:
+        log.warning("Failed to download OpenSanctions: %s", e)
+
+    # Use existing local copy if available
+    if OPENSANCTIONS_CSV.exists():
+        log.info("Using existing local copy: %s", OPENSANCTIONS_CSV)
+        return OPENSANCTIONS_CSV
+    log.error("No OpenSanctions data available")
+    return None
+
+
+def load_opensanctions() -> list[dict]:
+    """Load OpenSanctions SEBI debarred entities CSV into enforcement records."""
+    csv_path = download_opensanctions()
+    if not csv_path or not csv_path.exists():
+        return []
+
+    records = []
+    with open(csv_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            name = (row.get("name") or "").strip()
+            if not name or len(name) < 3:
+                continue
+
+            # Extract PAN from identifiers (semicolon-separated)
+            identifiers = row.get("identifiers", "")
+            pan = ""
+            for ident in identifiers.split(";"):
+                ident = ident.strip()
+                # Indian PAN: 5 letters + 4 digits + 1 letter
+                if re.match(r"^[A-Z]{5}\d{4}[A-Z]$", ident):
+                    pan = ident
+                    break
+
+            # Parse dates
+            first_seen = (row.get("first_seen") or "")[:10]  # YYYY-MM-DD
+            last_seen = (row.get("last_seen") or "")[:10]
+
+            records.append({
+                "source": "opensanctions_sebi",
+                "entity_name": name,
+                "entity_name_norm": normalize_name(name),
+                "reg_no": pan,
+                "order_date": last_seen or first_seen,
+                "order_type": "Debarred",
+                "violation_summary": "",
+                "penalty_amount": "",
+                "order_url": "",
+            })
+
+    log.info("OpenSanctions: loaded %d debarred entities", len(records))
+    return records
+
+
+# =============================================================================
 # Main
 # =============================================================================
 
@@ -427,9 +517,15 @@ def main():
     parser = argparse.ArgumentParser(description="Refresh enforcement history data")
     parser.add_argument("--sebi-only", action="store_true", help="Only scrape SEBI orders")
     parser.add_argument("--nse-only", action="store_true", help="Only scrape NSE defaulters")
+    parser.add_argument("--no-download", action="store_true", help="Use existing local data files")
     args = parser.parse_args()
 
     all_records = []
+
+    # PRIMARY: OpenSanctions SEBI debarred entities (14K+ records)
+    clear_source("opensanctions_sebi")
+    os_records = load_opensanctions()
+    all_records.extend(os_records)
 
     if not args.nse_only:
         clear_source("sebi_order")

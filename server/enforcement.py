@@ -10,6 +10,7 @@ or declared a defaulter by regulators.
 """
 
 import logging
+import re
 from dataclasses import dataclass, field
 
 from rapidfuzz import fuzz
@@ -132,17 +133,48 @@ def _lookup_by_regno(reg_no: str) -> list[EnforcementHit]:
     ]
 
 
+def _normalize_enforcement_name(name: str) -> str:
+    """Normalize entity name specifically for enforcement matching.
+    Strips legal suffixes, parenthetical additions, titles, etc."""
+    if not name:
+        return ""
+    s = name.upper().strip()
+    # Remove common prefixes
+    for prefix in ["M/S ", "M/S. ", "MR. ", "MS. ", "MRS. ", "SHRI ", "SMT. "]:
+        if s.startswith(prefix):
+            s = s[len(prefix):]
+    # Remove parenthetical suffixes like "(AND ITS CONSTITUENT PARTNERS)"
+    s = re.sub(r"\s*\([^)]*\)\s*$", "", s)
+    # Remove legal suffixes
+    for suffix in [
+        " PRIVATE LIMITED", " PVT LTD", " PVT. LTD.", " PVT.LTD.",
+        " LIMITED", " LTD.", " LTD",
+        " PROPRIETORSHIP", " PARTNERSHIP",
+        " (INDIA)", "(INDIA)",
+    ]:
+        if s.endswith(suffix):
+            s = s[: -len(suffix)].strip()
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
 def _lookup_by_name(name: str) -> list[EnforcementHit]:
     """Fuzzy match on normalised entity name."""
-    from .registry import normalize_name  # reuse existing normalizer
-
-    norm_query = normalize_name(name)
+    norm_query = _normalize_enforcement_name(name)
     if not norm_query or len(norm_query) < 3:
         return []
 
-    # Get all distinct entity names from enforcement DB
+    # Pre-filter with SQL LIKE to avoid scanning all 14K+ records.
+    # Extract first significant word (3+ chars) for the LIKE filter.
+    words = [w for w in norm_query.split() if len(w) >= 3]
+    if not words:
+        return []
+    like_pattern = f"%{words[0]}%"
+
     rows = db.conn().execute(
-        "SELECT DISTINCT entity_name, entity_name_norm FROM enforcement"
+        "SELECT DISTINCT entity_name, entity_name_norm FROM enforcement "
+        "WHERE entity_name_norm LIKE ? OR entity_name LIKE ?",
+        (like_pattern, like_pattern),
     ).fetchall()
 
     if not rows:
@@ -153,11 +185,13 @@ def _lookup_by_name(name: str) -> list[EnforcementHit]:
     for entity_name, entity_norm in rows:
         if not entity_norm:
             continue
+        # Normalize the DB entity name the same way for fair comparison
+        db_norm = _normalize_enforcement_name(entity_name)
         # Use weighted combination: token_sort is more reliable for entity names,
         # partial_ratio helps with substring matches (e.g. "YES Securities" matching
         # "YES Securities (India) Limited"). Weight token_sort 70%, partial 30%.
-        tsr = fuzz.token_sort_ratio(norm_query, entity_norm)
-        pr = fuzz.partial_ratio(norm_query, entity_norm)
+        tsr = fuzz.token_sort_ratio(norm_query, db_norm)
+        pr = fuzz.partial_ratio(norm_query, db_norm)
         score = 0.7 * tsr + 0.3 * pr
         if score >= MIN_MATCH_SCORE:
             candidates.append((entity_name, entity_norm, score))
