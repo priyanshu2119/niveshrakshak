@@ -203,17 +203,28 @@ def run_check(message: str, image_bytes: bytes | None, claimed_name: str,
     hits = redflags.scan(merged)
     flags = verdict.cross_checks(primaries, extracted, (claimed_name or "").strip())
 
+    # --- ENFORCEMENT HISTORY: check if entity has been penalised/defaulter ----
+    from . import enforcement as enf_mod
+    enf_result = None
+    if name or regno:
+        try:
+            enf_result = enf_mod.lookup(name=name or "", reg_no=regno or "")
+        except Exception:
+            log.warning("Enforcement lookup failed", exc_info=True)
+
     duration_ms = int((time.time() - t0) * 1000)
     sources = {
         "sebi_check": sebicheck.client.health()["state"],
         "registry_mirror_rows": registry.mirror_count(),
         "registry_as_of": registry.mirror_as_of(),
+        "enforcement_records": enf_mod.stats()["total_records"] if enf_result else 0,
         "ocr": ocr_state,
     }
     v = verdict.build(primaries, reg_result, hits, flags, extracted,
                       {"checked_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
                        "duration_ms": duration_ms, "sources": sources,
-                       "policy": policy.policy_summary()})
+                       "policy": policy.policy_summary()},
+                      enforcement_result=enf_result)
 
     # --- audit (privacy-masked) ------------------------------------------------
     check_id = db.log_check({
@@ -276,14 +287,26 @@ async def api_captcha():
 
 @app.get("/api/health")
 async def api_health():
+    from . import enforcement as enf_mod
     return {
         "sebi_check": sebicheck.client.health(),
         "registry": {"mirror_rows": registry.mirror_count(),
                      "as_of": registry.mirror_as_of(),
                      "stale": _mirror_stale()},
+        "enforcement": enf_mod.stats(),
         "policy": policy.policy_summary(),
         "checks_run": db.total_checks(),
     }
+
+
+@app.get("/api/enforcement")
+async def api_enforcement(name: str = "", reg_no: str = ""):
+    """Look up enforcement history for an entity."""
+    from . import enforcement as enf_mod
+    if not name and not reg_no:
+        return {"found": False, "error": "Provide name or reg_no parameter"}
+    result = enf_mod.lookup(name=name, reg_no=reg_no)
+    return result.to_dict()
 
 
 @app.post("/api/admin/refresh-registry")

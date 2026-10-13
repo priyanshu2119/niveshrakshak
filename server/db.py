@@ -77,6 +77,27 @@ CREATE TABLE IF NOT EXISTS meta (
     key TEXT PRIMARY KEY,
     value TEXT
 );
+
+-- Enforcement history: SEBI orders + NSE/BSE defaulter records.
+-- This is what makes us more than a SEBI Check wrapper: we show whether an
+-- entity has been penalised, suspended, or declared a defaulter — not just
+-- whether it is currently registered.
+CREATE TABLE IF NOT EXISTS enforcement (
+    id INTEGER PRIMARY KEY,
+    source TEXT NOT NULL,           -- 'sebi_order', 'nse_defaulter', 'bse_defaulter'
+    entity_name TEXT NOT NULL,
+    entity_name_norm TEXT NOT NULL, -- normalised for fuzzy matching against registry
+    reg_no TEXT,                    -- if available
+    order_date TEXT,                -- ISO date string or best-effort parse
+    order_type TEXT,                -- e.g. 'Adjudication', 'Settlement', 'Defaulter'
+    violation_summary TEXT,         -- short human-readable summary
+    penalty_amount TEXT,            -- if mentioned
+    order_url TEXT,                 -- link to the original order / PDF
+    imported_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_enforcement_name_norm ON enforcement(entity_name_norm);
+CREATE INDEX IF NOT EXISTS idx_enforcement_regno ON enforcement(reg_no);
+CREATE INDEX IF NOT EXISTS idx_enforcement_source ON enforcement(source);
 """
 
 

@@ -107,8 +107,16 @@ def cross_checks(primaries: list[dict], extracted: dict, claimed_name: str) -> l
 
 def build(primaries: list[dict], registry_result: dict | None,
           redflags_hits: list[dict], flags: list[dict],
-          extracted: dict, meta: dict) -> dict:
-    """Assemble the final verdict structure consumed by the frontend."""
+          extracted: dict, meta: dict,
+          enforcement_result=None) -> dict:
+    """Assemble the final verdict structure consumed by the frontend.
+
+    Args:
+        enforcement_result: Optional EnforcementResult from enforcement.lookup().
+            If provided and hits are found, adds enforcement history to the
+            verdict and may escalate the headline to RED_FLAG for entities
+            with active defaulter status.
+    """
     states = [p["state"] for p in primaries]
 
     # --- headline precedence (rules 1–4 above) ---
@@ -143,6 +151,20 @@ def build(primaries: list[dict], registry_result: dict | None,
             "sip_carveout": registry_result is not None and registry_result.get("state") == "exact",
         }
 
+    # --- enforcement history escalation ---
+    # If entity is a known defaulter, that's a red flag regardless of registration
+    enforcement_data = None
+    if enforcement_result and enforcement_result.found:
+        enforcement_data = enforcement_result.to_dict()
+        # NSE/BSE defaulter status is a hard red flag
+        has_defaulter = any(
+            h.source in ("nse_defaulter", "bse_defaulter")
+            for h in enforcement_result.hits
+        )
+        if has_defaulter and headline not in (RED_FLAG,):
+            headline = RED_FLAG
+            reasons = sorted(set(reasons) | {"enforcement_defaulter"})
+
     return {
         "headline": {
             "state": headline,
@@ -151,6 +173,7 @@ def build(primaries: list[dict], registry_result: dict | None,
         },
         "primaries": primaries,
         "registry": registry_result,
+        "enforcement": enforcement_data,
         "supporting": {
             "redflags": redflags_hits,
             "flags": flags,
