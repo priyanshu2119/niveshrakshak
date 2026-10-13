@@ -9,3 +9,8 @@ __pycache__/
 # OS/editor
 .DS_Store
 *.swp
+
+# build artifacts
+*.apk
+mobile/android/app/build/
+mobile/android/.gradle/
