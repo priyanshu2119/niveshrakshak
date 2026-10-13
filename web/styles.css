@@ -195,14 +195,13 @@ button.primary:disabled { opacity: .55; cursor: wait; transform: none; }
   opacity: .9;
 }
 .verdict-head {
-  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
-  padding: 14px 16px 10px;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 14px 16px 12px;
   border-bottom: 1px dashed var(--line);
 }
 .verdict-head .who { display: flex; align-items: center; gap: 8px; }
 .verdict-head .who svg { flex: none; }
-.verdict-head .who b { font-family: var(--display); font-size: 14px; letter-spacing: .02em; }
-.verdict-head .ids { font: 400 11.5px/1.5 var(--mono); color: var(--ink-soft); text-align: right; }
+.verdict-head .who b { font-family: var(--display); font-size: 15px; letter-spacing: .02em; }
 
 /* ---------- digital verification badge ----------
    Replaces paper-stamp metaphor with modern trust badge.
@@ -296,19 +295,7 @@ button.primary:disabled { opacity: .55; cursor: wait; transform: none; }
 .enf-hit .summary { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
 .enf-link { font-size: 12px; color: var(--accent); text-decoration: underline; }
 
-/* ---------- progressive disclosure toggle ---------- */
-.detail-toggle {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  width: 100%; padding: 10px;
-  font: 600 13px/1 var(--body); color: var(--accent);
-  background: transparent; border: 0; border-top: 1px dashed var(--line);
-  cursor: pointer; min-height: 44px;
-}
-.detail-toggle:hover { background: rgba(34, 50, 79, .04); }
-.detail-toggle svg { transition: transform .2s ease; }
-.detail-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
-.detail-panel { overflow: hidden; }
-.detail-panel[hidden] { display: none; }
+
 
 /* sections */
 .vsec { padding: 14px 16px; border-top: 1px dashed var(--line); }

@@ -413,16 +413,12 @@ function renderVerdict(v) {
 
   const card = el("article", "verdict"); card.id = "verdict-card";
 
-  // --- L1: Badge + headline (always visible, glanceable) ---
+  // --- Header: brand + badge (clean, no metadata noise) ---
   const head = el("div", "verdict-head");
   head.append(el("div", "who",
     '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 1.8 21.2 5.3V11c0 5.7-3.9 10-9.2 11.3C6.7 21 2.8 16.7 2.8 11V5.3Z" fill="#22324F"/><path d="M12 6.2 17.8 15.9H6.2Z" fill="#157F3D"/><path d="M9.9 12.9 11.5 14.6 14.7 10.4" fill="none" stroke="#F7F3EC" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><b>NiveshRakshak</b>'));
-  const meta = v.meta || {};
-  const timeStr = (meta.checked_at || "").replace("T", " ").slice(0, 16);
-  head.append(el("div", "ids",
-    `${t("check_id", { id: meta.check_id ?? "—" })}<br>${t("checked_at", { time: esc(timeStr) })}${meta.duration_ms ? "<br>" + t("took", { ms: meta.duration_ms }) : ""}`));
 
-  // Digital badge replaces paper stamp
+  // Digital badge — the ONE thing users need to see first
   const badgeClass = BADGE_CLASS[state] || "badge-unknown";
   const badgeIcon = BADGE_ICONS[state] || BADGE_ICONS.caution;
   const st = t("stamp." + state);
@@ -452,10 +448,7 @@ function renderVerdict(v) {
   hl.lastChild.append(h2, el("p", "", body));
   card.append(hl);
 
-  // --- L2: Key facts (primary + registry + enforcement) ---
-  // Wrapped in a detail panel for progressive disclosure
-  const l2Panel = el("div", "detail-panel"); l2Panel.id = "l2-panel";
-
+  // --- Details: always visible, simple and scannable ---
   if ((v.primaries || []).length) {
     const sec = el("section", "vsec");
     sec.append(el("h3", "", `${t("sec_primary")} <span class="tag">${t("tag_primary")}</span>`));
@@ -465,31 +458,12 @@ function renderVerdict(v) {
       if (note.sip_carveout) sec.append(el("p", "caveat", t("sip_note")));
       if (note.in_transition) sec.append(el("p", "caveat", t("transition_note", { cutoff: esc(note.legacy_cutoff) })));
     }
-    l2Panel.append(sec);
+    card.append(sec);
   }
 
-  l2Panel.append(registrySection(v.registry));
-  l2Panel.append(enforcementSection(v.enforcement));
-  l2Panel.append(supportingSection(v.supporting || {}, state));
-  card.append(l2Panel);
-
-  // Progressive disclosure toggle
-  const toggleBtn = el("button", "detail-toggle", `${t("detail_show")} <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
-  toggleBtn.type = "button";
-  toggleBtn.setAttribute("aria-expanded", "false");
-  toggleBtn.setAttribute("aria-controls", "l2-panel");
-  toggleBtn.addEventListener("click", () => {
-    const expanded = toggleBtn.getAttribute("aria-expanded") === "true";
-    toggleBtn.setAttribute("aria-expanded", String(!expanded));
-    l2Panel.hidden = !expanded;
-    toggleBtn.innerHTML = expanded
-      ? `${t("detail_show")} <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
-      : `${t("detail_hide")} <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  });
-  card.append(toggleBtn);
-
-  // Start with details hidden (progressive disclosure L1 default)
-  l2Panel.hidden = true;
+  card.append(registrySection(v.registry));
+  card.append(enforcementSection(v.enforcement));
+  card.append(supportingSection(v.supporting || {}, state));
 
   // next action (always visible — it's actionable guidance)
   const na = el("div", "nextaction");
@@ -498,12 +472,15 @@ function renderVerdict(v) {
   if (state === "red_flag" || state === "unverifiable") na.append(el("p", "helpline", t("helpline")));
   card.append(na);
 
-  // foot
+  // foot — metadata lives here, not in the header
+  const meta = v.meta || {};
   const src = meta.sources || {};
   const pol = meta.policy || {};
+  const timeStr = (meta.checked_at || "").replace("T", " ").slice(0, 16);
   card.append(el("footer", "verdict-foot",
     `<p class="vns">${t("vns_line")}</p>` +
-    `<p>SEBI Check: ${esc(src.sebi_check || "?")} · registry mirror: ${(src.registry_mirror_rows || 0).toLocaleString("en-IN")} rows${src.registry_as_of ? " (" + esc(src.registry_as_of) + ")" : ""}${src.enforcement_records ? " · enforcement: " + src.enforcement_records + " records" : ""}${src.ocr && src.ocr !== "none" ? " · OCR: " + esc(src.ocr) : ""} · policy: ${esc(pol.mode || "?")}/${esc(pol.legacy_cutoff || "?")}</p>`));
+    `<p>${t("check_id", { id: meta.check_id ?? "—" })} · ${t("checked_at", { time: esc(timeStr) })}${meta.duration_ms ? " · " + t("took", { ms: meta.duration_ms }) : ""}</p>` +
+    `<p>SEBI Check: ${esc(src.sebi_check || "?")} · registry: ${(src.registry_mirror_rows || 0).toLocaleString("en-IN")} rows${src.registry_as_of ? " (" + esc(src.registry_as_of) + ")" : ""}${src.enforcement_records ? " · enforcement: " + src.enforcement_records : ""}${src.ocr && src.ocr !== "none" ? " · OCR: " + esc(src.ocr) : ""}</p>`));
 
   host.append(card);
 
