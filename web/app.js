@@ -360,6 +360,51 @@ function supportingSection(sup, headlineState) {
   return sec;
 }
 
+/* ---------- SVG icons for badge states ---------- */
+const BADGE_ICONS = {
+  verified: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path class="shield-fill" d="M12 2L4 6v5c0 5.25 3.4 10.1 8 11.25C16.6 21.1 20 16.25 20 11V6l-8-4z" fill="#fff"/><path class="checkmark-path" d="M9 12l2 2 4-4" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  red_flag: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#fff"/><path d="M8 8l8 8M16 8l-8 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>',
+  caution: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3L2 21h20L12 3z" fill="#fff"/><path d="M12 10v4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="17" r="1.2" fill="currentColor"/></svg>',
+  unverifiable: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="#fff" stroke-width="2"/><path d="M9 9a3 3 0 015.12 2.13c0 2-3 2.87-3 2.87" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="18" r="1" fill="#fff"/></svg>',
+  captcha_pending: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" fill="#fff"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+};
+
+const BADGE_CLASS = {
+  verified: "badge-safe",
+  red_flag: "badge-danger",
+  caution: "badge-warn",
+  unverifiable: "badge-unknown",
+  captcha_pending: "badge-pending",
+};
+
+function enforcementSection(enf) {
+  if (!enf) return document.createDocumentFragment();
+  const sec = el("section", "vsec");
+  sec.append(el("h3", "", `${t("sec_enforcement")} <span class="tag">${t("tag_enforcement")}</span>`));
+
+  if (!enf.found || !enf.hits || enf.hits.length === 0) {
+    sec.append(el("div", "enf-box clean", `<h4><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> ${t("enf_clean")}</h4>`));
+    return sec;
+  }
+
+  const box = el("div", "enf-box");
+  box.append(el("h4", "", `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> ${t("enf_hits_title", { count: enf.hit_count || enf.hits.length })}`));
+
+  for (const h of enf.hits.slice(0, 5)) {
+    const hit = el("div", "enf-hit");
+    hit.append(el("span", "type", esc(h.order_type || h.source)));
+    hit.append(el("span", "date", ` · ${esc(h.order_date || "?")}`));
+    if (h.violation_summary) hit.append(el("div", "summary", esc(h.violation_summary.slice(0, 120))));
+    if (h.order_url) hit.append(el("a", "enf-link", t("enf_source_label", { source: esc(h.source) })));
+    if (h.order_url) hit.lastChild.href = h.order_url;
+    if (h.order_url) hit.lastChild.target = "_blank";
+    if (h.order_url) hit.lastChild.rel = "noopener";
+    box.append(hit);
+  }
+  sec.append(box);
+  return sec;
+}
+
 function renderVerdict(v) {
   window.NR.lastVerdict = v;
   const host = $("#result");
@@ -367,7 +412,8 @@ function renderVerdict(v) {
   const state = v.headline.state;
 
   const card = el("article", "verdict"); card.id = "verdict-card";
-  // head
+
+  // --- L1: Badge + headline (always visible, glanceable) ---
   const head = el("div", "verdict-head");
   head.append(el("div", "who",
     '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 1.8 21.2 5.3V11c0 5.7-3.9 10-9.2 11.3C6.7 21 2.8 16.7 2.8 11V5.3Z" fill="#22324F"/><path d="M12 6.2 17.8 15.9H6.2Z" fill="#157F3D"/><path d="M9.9 12.9 11.5 14.6 14.7 10.4" fill="none" stroke="#F7F3EC" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><b>NiveshRakshak</b>'));
@@ -375,18 +421,25 @@ function renderVerdict(v) {
   const timeStr = (meta.checked_at || "").replace("T", " ").slice(0, 16);
   head.append(el("div", "ids",
     `${t("check_id", { id: meta.check_id ?? "—" })}<br>${t("checked_at", { time: esc(timeStr) })}${meta.duration_ms ? "<br>" + t("took", { ms: meta.duration_ms }) : ""}`));
+
+  // Digital badge replaces paper stamp
+  const badgeClass = BADGE_CLASS[state] || "badge-unknown";
+  const badgeIcon = BADGE_ICONS[state] || BADGE_ICONS.caution;
   const st = t("stamp." + state);
-  head.append(el("div", "stamp st-" + state, `${esc(st[0])}<small>${esc(st[1])}</small>`));
+  head.append(el("div", `badge ${badgeClass}`, `${badgeIcon}<span>${esc(st[0])}</span>`));
   card.append(head);
 
-  // headline
+  // Headline section
   const hl = el("div", "headline hl-" + state);
   hl.append(el("div", "ico", ICONS[state] || ICONS.caution));
   let body = t("hl_body." + state);
   if (state === "red_flag") {
     const firstBad = (v.primaries || []).find((p) => p.state === "invalid");
     const catMis = (v.supporting?.flags || []).find((f) => f.id === "category_mismatch");
-    if (catMis) {
+    const enfDef = (v.headline.reasons || []).includes("enforcement_defaulter");
+    if (enfDef) {
+      body = "This entity appears on a regulator's defaulter or expelled members list. Do not send money to this destination.";
+    } else if (catMis) {
       body = t("reason_body.category_mismatch", {
         claimed: esc(catMis.claimed_label || catMis.claimed_category || "?"),
         actual: esc(catMis.suffix_label || catMis.suffix || "?") });
@@ -399,7 +452,10 @@ function renderVerdict(v) {
   hl.lastChild.append(h2, el("p", "", body));
   card.append(hl);
 
-  // primary
+  // --- L2: Key facts (primary + registry + enforcement) ---
+  // Wrapped in a detail panel for progressive disclosure
+  const l2Panel = el("div", "detail-panel"); l2Panel.id = "l2-panel";
+
   if ((v.primaries || []).length) {
     const sec = el("section", "vsec");
     sec.append(el("h3", "", `${t("sec_primary")} <span class="tag">${t("tag_primary")}</span>`));
@@ -409,13 +465,33 @@ function renderVerdict(v) {
       if (note.sip_carveout) sec.append(el("p", "caveat", t("sip_note")));
       if (note.in_transition) sec.append(el("p", "caveat", t("transition_note", { cutoff: esc(note.legacy_cutoff) })));
     }
-    card.append(sec);
+    l2Panel.append(sec);
   }
 
-  card.append(registrySection(v.registry));
-  card.append(supportingSection(v.supporting || {}, state));
+  l2Panel.append(registrySection(v.registry));
+  l2Panel.append(enforcementSection(v.enforcement));
+  l2Panel.append(supportingSection(v.supporting || {}, state));
+  card.append(l2Panel);
 
-  // next action
+  // Progressive disclosure toggle
+  const toggleBtn = el("button", "detail-toggle", `${t("detail_show")} <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
+  toggleBtn.type = "button";
+  toggleBtn.setAttribute("aria-expanded", "false");
+  toggleBtn.setAttribute("aria-controls", "l2-panel");
+  toggleBtn.addEventListener("click", () => {
+    const expanded = toggleBtn.getAttribute("aria-expanded") === "true";
+    toggleBtn.setAttribute("aria-expanded", String(!expanded));
+    l2Panel.hidden = !expanded;
+    toggleBtn.innerHTML = expanded
+      ? `${t("detail_show")} <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+      : `${t("detail_hide")} <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  });
+  card.append(toggleBtn);
+
+  // Start with details hidden (progressive disclosure L1 default)
+  l2Panel.hidden = true;
+
+  // next action (always visible — it's actionable guidance)
   const na = el("div", "nextaction");
   na.append(el("h3", "", t("next_h")));
   na.append(el("p", "", t("next." + state)));
@@ -427,7 +503,7 @@ function renderVerdict(v) {
   const pol = meta.policy || {};
   card.append(el("footer", "verdict-foot",
     `<p class="vns">${t("vns_line")}</p>` +
-    `<p>SEBI Check: ${esc(src.sebi_check || "?")} · registry mirror: ${(src.registry_mirror_rows || 0).toLocaleString("en-IN")} rows${src.registry_as_of ? " (" + esc(src.registry_as_of) + ")" : ""}${src.ocr && src.ocr !== "none" ? " · OCR: " + esc(src.ocr) : ""} · policy: ${esc(pol.mode || "?")}/${esc(pol.legacy_cutoff || "?")}</p>`));
+    `<p>SEBI Check: ${esc(src.sebi_check || "?")} · registry mirror: ${(src.registry_mirror_rows || 0).toLocaleString("en-IN")} rows${src.registry_as_of ? " (" + esc(src.registry_as_of) + ")" : ""}${src.enforcement_records ? " · enforcement: " + src.enforcement_records + " records" : ""}${src.ocr && src.ocr !== "none" ? " · OCR: " + esc(src.ocr) : ""} · policy: ${esc(pol.mode || "?")}/${esc(pol.legacy_cutoff || "?")}</p>`));
 
   host.append(card);
 

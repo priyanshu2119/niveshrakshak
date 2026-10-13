@@ -60,13 +60,13 @@ const I18N = {
     link_cyber: "cybercrime.gov.in",
     link_helpline: "Cyber fraud helpline: dial 1930",
 
-    // verdict card
+    // verdict card — digital badge labels (replaces paper-stamp metaphor)
     stamp: {
-      red_flag: ["DO NOT PAY", "RED FLAG"],
-      verified: ["CHANNEL VERIFIED", "@VALID"],
-      caution: ["NOT CHECKED", "CAUTION"],
-      unverifiable: ["COULDN'T CHECK", "TRY AGAIN"],
-      captcha_pending: ["ONE MORE STEP", "SEBI CAPTCHA"],
+      red_flag: ["FRAUD DETECTED", "DO NOT PAY"],
+      verified: ["VERIFIED SAFE", "@VALID"],
+      caution: ["REVIEW NEEDED", "NO DATA YET"],
+      unverifiable: ["UNVERIFIABLE", "TRY AGAIN"],
+      captcha_pending: ["CAPTCHA REQUIRED", "ONE MORE STEP"],
     },
     hl_title: {
       red_flag: "Stop — don't pay this way",
@@ -98,6 +98,14 @@ const I18N = {
     tag_primary: "PRIMARY",
     sec_registry: "Name in SEBI's registry",
     tag_registry: "CONTEXT, NOT PROOF",
+    sec_enforcement: "Enforcement history",
+    tag_enforcement: "REGULATOR ACTIONS",
+    enf_clean: "No enforcement actions found against this entity.",
+    enf_hits_title: "{count} enforcement action(s) on record",
+    enf_hit_line: "{date} · {type}",
+    enf_source_label: "Source: {source}",
+    detail_show: "Show details",
+    detail_hide: "Hide details",
     sec_supporting: "Also noticed in the message",
     tag_supporting: "CONTEXT",
     pill: {
@@ -216,9 +224,9 @@ const I18N = {
     link_helpline: "साइबर धोखा हेल्पलाइन: 1930 डायल करें",
 
     stamp: {
-      red_flag: ["पैसे न भेजें", "खतरा"],
-      verified: ["चैनल सत्यापित", "@VALID"],
-      caution: ["जांच बाकी", "सावधान"],
+      red_flag: ["धोखाधड़ी मिली", "पैसे न भेजें"],
+      verified: ["सत्यापित सुरक्षित", "@VALID"],
+      caution: ["समीक्षा आवश्यक", "डेटा नहीं मिला"],
       unverifiable: ["जांच नहीं हो पाई", "फिर कोशिशें"],
       captcha_pending: ["एक कदम और", "SEBI कैप्चा"],
     },
@@ -252,6 +260,14 @@ const I18N = {
     tag_primary: "मुख्य",
     sec_registry: "SEBI रजिस्ट्री में नाम",
     tag_registry: "संदर्भ, प्रमाण नहीं",
+    sec_enforcement: "प्रवर्तन इतिहास",
+    tag_enforcement: "नियामक कार्रवाई",
+    enf_clean: "इस संस्था के खिलाफ कोई प्रवर्तन कार्रवाई नहीं मिली।",
+    enf_hits_title: "{count} प्रवर्तन कार्रवाई रिकॉर्ड पर",
+    enf_hit_line: "{date} · {type}",
+    enf_source_label: "स्रोत: {source}",
+    detail_show: "विवरण दिखाएं",
+    detail_hide: "विवरण छिपाएं",
     sec_supporting: "मैसेज में यह भी मिला",
     tag_supporting: "संदर्भ",
     pill: {
