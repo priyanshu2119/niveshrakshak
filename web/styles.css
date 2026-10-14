@@ -184,6 +184,9 @@ button.primary:disabled { opacity: .55; cursor: wait; transform: none; }
   box-shadow: 4px 4px 0 rgba(28, 27, 25, .16);
   margin: 6px 0 30px;
   overflow: hidden;
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 /* perforation strip */
 .verdict::before {
@@ -208,12 +211,13 @@ button.primary:disabled { opacity: .55; cursor: wait; transform: none; }
    Always pairs color + shape + text label for accessibility (8% male CVD). */
 .badge {
   flex: none;
-  display: flex; align-items: center; gap: 8px;
-  font: 700 13px/1.1 var(--display);
-  letter-spacing: .06em; text-transform: uppercase;
-  padding: 8px 14px;
+  display: flex; align-items: center; gap: 6px;
+  font: 700 12px/1.1 var(--display);
+  letter-spacing: .05em; text-transform: uppercase;
+  padding: 7px 12px;
   border-radius: 8px;
   white-space: nowrap;
+  max-width: 55%;
 }
 .badge svg { flex: none; }
 .badge small { font-size: 10px; letter-spacing: .1em; opacity: .85; margin-left: 2px; }
@@ -250,16 +254,16 @@ button.primary:disabled { opacity: .55; cursor: wait; transform: none; }
 }
 
 /* headline — L1 of progressive disclosure (always visible, glanceable) */
-.headline { padding: 16px 16px 14px; display: flex; gap: 13px; align-items: flex-start; }
+.headline { padding: 14px 16px 12px; display: flex; gap: 12px; align-items: flex-start; }
 .headline .ico {
-  flex: none; width: 48px; height: 48px; border-radius: 12px;
+  flex: none; width: 40px; height: 40px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
 }
 .headline h2 {
-  font-family: var(--display); font-size: 22px; line-height: 1.2;
-  margin: 0 0 5px; letter-spacing: -.005em;
+  font-family: var(--display); font-size: 20px; line-height: 1.25;
+  margin: 0 0 4px; letter-spacing: -.005em;
 }
-.headline p { margin: 0; font-size: 15px; color: var(--ink-soft); line-height: 1.45; }
+.headline p { margin: 0; font-size: 14.5px; color: var(--ink-soft); line-height: 1.45; }
 .hl-red_flag .ico { background: var(--bad-bg); color: var(--bad); }
 .hl-red_flag h2 { color: var(--bad-dark); }
 .hl-verified .ico { background: var(--ok-bg); color: var(--ok); }
@@ -452,9 +456,14 @@ footer .hint { margin: 0 0 12px; }
 #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
 @media (max-width: 420px) {
-  .headline h2 { font-size: 19.5px; }
-  .stamp { max-width: 96px; font-size: 11px; }
-  .verdict-head .ids { font-size: 10.5px; }
+  .headline h2 { font-size: 18px; }
+  .headline .ico { width: 36px; height: 36px; border-radius: 8px; }
+  .badge { font-size: 11px; padding: 6px 10px; max-width: 50%; }
+  .verdict-head { padding: 12px 14px 10px; gap: 8px; }
+  .vsec { padding: 12px 14px; }
+  .prow { padding: 10px 11px; }
+  .qr-row { padding: 8px 10px; gap: 10px; }
+  .qr-code { width: 56px; height: 56px; }
 }
 
 @media print {
