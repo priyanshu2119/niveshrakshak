@@ -152,18 +152,20 @@ def build(primaries: list[dict], registry_result: dict | None,
         }
 
     # --- enforcement history escalation ---
-    # If entity is a known defaulter, that's a red flag regardless of registration
+    # If entity is a known defaulter/debarred entity, that's a red flag
+    # regardless of registration status. Always surface this reason.
     enforcement_data = None
     if enforcement_result and enforcement_result.found:
         enforcement_data = enforcement_result.to_dict()
-        # NSE/BSE defaulter status is a hard red flag
-        has_defaulter = any(
-            h.source in ("nse_defaulter", "bse_defaulter")
-            for h in enforcement_result.hits
-        )
-        if has_defaulter and headline not in (RED_FLAG,):
-            headline = RED_FLAG
+        # Any enforcement hit (debarred, defaulter, adjudication) is significant
+        has_enforcement = len(enforcement_result.hits) > 0
+        if has_enforcement:
+            # Always add enforcement_defaulter to reasons so frontend shows
+            # the enforcement-specific body text instead of generic personal_handle
             reasons = sorted(set(reasons) | {"enforcement_defaulter"})
+            # Escalate to RED_FLAG if not already
+            if headline not in (RED_FLAG,):
+                headline = RED_FLAG
 
     return {
         "headline": {

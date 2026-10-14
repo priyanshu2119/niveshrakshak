@@ -226,6 +226,16 @@ def extract_org_names(text: str) -> list[str]:
     out = []
     for m in _CAP_SEQ.finditer(text):
         name = m.group(1).strip(" .,-")
+        # Strip trailing non-org words that leak from surrounding prose
+        # e.g. "Taurus Corporate Advisory Services Limited. Pay" → remove "Pay"
+        # e.g. "Zerodha Broking Limited today" → remove "today"
+        name = re.sub(
+            r'\s+(?:pay|send|transfer|invest|contact|call|today|now|immediately|'
+            r'please|kindly|urgent|amount|money|here|this|that|the|and|or|to|for|'
+            r'in|on|at|via|with|from|by|is|are|was|were|be|been|being|have|has|had|'
+            r'do|does|did|will|would|could|should|may|might|can|shall)\b[.\s]*$',
+            '', name, flags=re.I
+        ).strip(" .,-")
         if not (4 < len(name) < 90):
             continue
         if not _ORG_MARKER.search(name):
