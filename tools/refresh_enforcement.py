@@ -510,6 +510,47 @@ def load_opensanctions() -> list[dict]:
 
 
 # =============================================================================
+# Curated Historical Enforcement Data (real dates, violation summaries)
+# =============================================================================
+
+CURATED_CSV = Path(__file__).resolve().parent.parent / "data" / "curated_enforcement.csv"
+
+
+def load_curated() -> list[dict]:
+    """Load curated enforcement records with real historical dates.
+
+    These supplement the OpenSanctions data (which only has last_seen dates)
+    with actual order dates, violation summaries, and penalty amounts for
+    high-profile cases like Sahara, Karvy, PACL, etc.
+    """
+    if not CURATED_CSV.exists():
+        log.warning("Curated enforcement CSV not found: %s", CURATED_CSV)
+        return []
+
+    records = []
+    with open(CURATED_CSV, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            name = (row.get("entity_name") or "").strip()
+            if not name:
+                continue
+            records.append({
+                "source": row.get("source", "curated"),
+                "entity_name": name,
+                "entity_name_norm": normalize_name(name),
+                "reg_no": "",
+                "order_date": row.get("order_date", ""),
+                "order_type": row.get("order_type", ""),
+                "violation_summary": row.get("violation_summary", ""),
+                "penalty_amount": row.get("penalty_amount", ""),
+                "order_url": row.get("order_url", ""),
+            })
+
+    log.info("Curated enforcement: loaded %d historical records", len(records))
+    return records
+
+
+# =============================================================================
 # Main
 # =============================================================================
 
@@ -526,6 +567,11 @@ def main():
     clear_source("opensanctions_sebi")
     os_records = load_opensanctions()
     all_records.extend(os_records)
+
+    # CURATED: Historical enforcement with real dates (supplements OpenSanctions)
+    clear_source("curated")
+    curated_records = load_curated()
+    all_records.extend(curated_records)
 
     if not args.nse_only:
         clear_source("sebi_order")
