@@ -20,3 +20,6 @@ data/*.sqlite*
 data/*.csv
 data/*.xls
 data/*.log
+
+# docs contain competitive analysis, strategic plans, research — keep local only
+docs/
