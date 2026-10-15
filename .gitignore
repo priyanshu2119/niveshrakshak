@@ -14,3 +14,9 @@ __pycache__/
 *.apk
 mobile/android/app/build/
 mobile/android/.gradle/
+
+# proprietary data — enforcement DB and curated records are the moat
+data/*.sqlite*
+data/*.csv
+data/*.xls
+data/*.log
